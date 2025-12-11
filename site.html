@@ -1,0 +1,2409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DxB Trading - Communauté de Trading</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 50%, #000000 100%);
+        }
+        
+        .gradient-text {
+            background: linear-gradient(90deg, #ffffff, #9ca3af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .card-glow {
+            box-shadow: 0 0 40px rgba(255, 255, 255, 0.05);
+        }
+        
+        .card-glow:hover {
+            box-shadow: 0 0 60px rgba(255, 255, 255, 0.1);
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .chart-line {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 3s ease forwards;
+        }
+        
+        @keyframes draw {
+            to { stroke-dashoffset: 0; }
+        }
+        
+        .pulse-white {
+            animation: pulse-white 2s infinite;
+        }
+        
+        @keyframes pulse-white {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(255, 255, 255, 0); }
+        }
+        
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+
+        .modal {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            transform: scale(0.9) translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .modal.active .modal-content {
+            transform: scale(1) translateY(0);
+        }
+
+        .toast {
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .signal-card {
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .new-signal {
+            animation: glow 1s ease-in-out 3;
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.6); }
+        }
+
+        /* Chat styles */
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+        }
+
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-container::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+
+        .chat-container::-webkit-scrollbar-thumb {
+            background: #404040;
+            border-radius: 3px;
+        }
+
+        .chat-message {
+            animation: messageIn 0.3s ease;
+        }
+
+        @keyframes messageIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-image {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .chat-image:hover {
+            transform: scale(1.02);
+        }
+
+        /* Calendar styles */
+        .calendar-day {
+            aspect-ratio: 1;
+            transition: all 0.2s ease;
+        }
+
+        .calendar-day:hover {
+            transform: scale(1.05);
+        }
+
+        .calendar-day.has-data {
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        .admin-tab-btn.active {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: white;
+        }
+
+        /* Image preview modal */
+        .image-preview-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 70;
+            background: rgba(0,0,0,0.9);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview-modal.active {
+            display: flex;
+        }
+
+        .image-preview-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="gradient-bg text-white scroll-smooth">
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast fixed top-20 right-4 z-[60] bg-white text-black px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+        <i class="fas fa-check-circle"></i>
+        <span id="toast-message">Message envoyé!</span>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-preview-modal" class="image-preview-modal" onclick="closeImagePreview()">
+        <img id="preview-image" src="" alt="Preview">
+        <button onclick="closeImagePreview()" class="absolute top-4 right-4 text-white text-3xl hover:text-gray-300">&times;</button>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-8 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Connexion</h3>
+                <button onclick="closeModal('login-modal')" class="text-neutral-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Email</label>
+                    <input type="email" id="login-email" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="votre@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Mot de passe</label>
+                    <input type="password" id="login-password" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="••••••••">
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="accent-white">
+                        <span class="text-neutral-400">Se souvenir de moi</span>
+                    </label>
+                    <a href="#" class="text-white hover:underline">Mot de passe oublié?</a>
+                </div>
+                <button type="submit" class="w-full py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">Se connecter</button>
+                <p class="text-center text-neutral-400 text-sm">
+                    Pas encore membre? <a href="#" onclick="switchModal('login-modal', 'register-modal')" class="text-white hover:underline">Créer un compte</a>
+                </p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Register Modal (Now shows contact info) -->
+    <div id="register-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-8 w-full max-w-md text-center">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Rejoindre DxB Trading</h3>
+                <button onclick="closeModal('register-modal')" class="text-neutral-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="py-8">
+                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <i class="fas fa-user-lock text-white text-3xl"></i>
+                </div>
+                <h4 class="text-xl font-semibold mb-3">Accès sur invitation uniquement</h4>
+                <p class="text-neutral-400 mb-6">Les comptes sont créés exclusivement par l'administrateur. Rejoignez notre Discord pour faire une demande d'accès.</p>
+                <div class="space-y-3">
+                    <a href="https://discord.gg/xDXj7fYWa5" target="_blank" class="block w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl font-semibold transition">
+                        <i class="fab fa-discord mr-2"></i>Rejoindre Discord
+                    </a>
+                    <button onclick="switchModal('register-modal', 'login-modal')" class="w-full py-3 border border-neutral-600 hover:border-white rounded-xl font-semibold transition">
+                        J'ai déjà un compte
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div id="contact-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-8 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-2xl font-bold">Nous contacter</h3>
+                <button onclick="closeModal('contact-modal')" class="text-neutral-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="contact-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Nom complet</label>
+                    <input type="text" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="Votre nom">
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Email</label>
+                    <input type="email" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="votre@email.com">
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Sujet</label>
+                    <select class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white">
+                        <option>Question générale</option>
+                        <option>Support technique</option>
+                        <option>Partenariat</option>
+                        <option>Facturation</option>
+                        <option>Autre</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Message</label>
+                    <textarea required rows="4" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white resize-none" placeholder="Votre message..."></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">Envoyer</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Demo Video Modal -->
+    <div id="demo-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-6 w-full max-w-4xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold">Découvrez DxB Trading en action</h3>
+                <button onclick="closeModal('demo-modal')" class="text-neutral-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <div class="aspect-video bg-black rounded-xl flex items-center justify-center">
+                <div class="text-center">
+                    <i class="fas fa-play-circle text-6xl text-white mb-4"></i>
+                    <p class="text-neutral-400">Vidéo de démonstration</p>
+                    <p class="text-neutral-500 text-sm mt-2">Ajoutez votre lien YouTube ici</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Confirmation Modal -->
+    <div id="pricing-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-8 w-full max-w-md text-center">
+            <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-check text-white text-3xl"></i>
+            </div>
+            <h3 class="text-2xl font-bold mb-2">Excellent choix!</h3>
+            <p id="pricing-plan-name" class="text-white text-lg mb-4">Plan Pro</p>
+            <p class="text-neutral-400 mb-6">Vous allez être redirigé vers notre serveur Discord pour finaliser votre inscription et accéder à la communauté.</p>
+            <div class="space-y-3">
+                <a href="https://discord.gg/xDXj7fYWa5" target="_blank" class="block w-full py-3 bg-[#5865F2] hover:bg-[#4752C4] rounded-xl font-semibold transition">
+                    <i class="fab fa-discord mr-2"></i>Rejoindre Discord
+                </a>
+                <button onclick="closeModal('pricing-modal')" class="w-full py-3 border border-neutral-600 hover:border-neutral-500 rounded-xl font-semibold transition">Annuler</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calendar Entry Modal -->
+    <div id="calendar-modal" class="modal fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="modal-content bg-neutral-900 border border-neutral-700 rounded-2xl p-6 w-full max-w-md">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold" id="calendar-modal-title">Ajouter résultat</h3>
+                <button onclick="closeModal('calendar-modal')" class="text-neutral-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            <form id="calendar-form" class="space-y-4">
+                <input type="hidden" id="calendar-date">
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Résultat du jour</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button type="button" onclick="setCalendarType('gain')" id="btn-gain" class="py-3 border border-neutral-700 rounded-xl font-semibold transition hover:border-green-500 hover:bg-green-500/10">
+                            <i class="fas fa-arrow-up text-green-400 mr-2"></i>Gain
+                        </button>
+                        <button type="button" onclick="setCalendarType('loss')" id="btn-loss" class="py-3 border border-neutral-700 rounded-xl font-semibold transition hover:border-red-500 hover:bg-red-500/10">
+                            <i class="fas fa-arrow-down text-red-400 mr-2"></i>Perte
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Montant (€)</label>
+                    <input type="number" id="calendar-amount" required step="0.01" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="50.00">
+                </div>
+                <div>
+                    <label class="block text-sm text-neutral-400 mb-2">Note (optionnel)</label>
+                    <input type="text" id="calendar-note" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="EUR/USD, BTC...">
+                </div>
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">Enregistrer</button>
+                    <button type="button" onclick="deleteCalendarEntry()" id="delete-calendar-btn" class="hidden px-4 py-3 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-xl transition">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-40 bg-black/90 backdrop-blur-md border-b border-neutral-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center space-x-2 cursor-pointer" onclick="navigateTo('home')">
+                    <i class="fas fa-chart-line text-white text-2xl"></i>
+                    <span class="text-xl font-bold">DxB <span class="text-neutral-400">Trading</span></span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8" id="nav-links">
+                    <a href="#accueil" class="hover:text-neutral-400 transition nav-home">Accueil</a>
+                    <a href="#signaux" class="hover:text-neutral-400 transition nav-home">Signaux</a>
+                    <a href="#stats" class="hover:text-neutral-400 transition nav-home">Statistiques</a>
+                    <a href="#tarifs" class="hover:text-neutral-400 transition nav-home">Tarifs</a>
+                    <a href="#temoignages" class="hover:text-neutral-400 transition nav-home">Témoignages</a>
+                </div>
+                <div class="flex items-center space-x-4" id="auth-buttons">
+                    <button onclick="openModal('login-modal')" class="hidden sm:block px-4 py-2 text-sm hover:text-neutral-400 transition" id="login-btn">Connexion</button>
+                    <button onclick="openModal('register-modal')" class="px-4 py-2 bg-white hover:bg-neutral-200 text-black rounded-lg text-sm font-semibold transition" id="register-btn">Rejoindre</button>
+                </div>
+                <!-- User Menu (hidden by default) -->
+                <div class="hidden items-center space-x-4" id="user-menu">
+                    <button onclick="navigateTo('signals')" class="px-4 py-2 text-sm hover:text-neutral-400 transition">
+                        <i class="fas fa-signal mr-2"></i>Mes Signaux
+                    </button>
+                    <button onclick="navigateTo('admin')" class="hidden px-4 py-2 text-sm hover:text-neutral-400 transition" id="admin-btn">
+                        <i class="fas fa-cog mr-2"></i>Admin
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-black font-bold text-sm" id="user-avatar">U</div>
+                        <span class="text-sm hidden sm:block" id="user-name">Utilisateur</span>
+                        <button onclick="logout()" class="text-neutral-400 hover:text-white ml-2" title="Déconnexion">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+                <button id="mobile-menu-btn" class="md:hidden text-xl">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-black border-t border-neutral-800">
+            <div class="px-4 py-4 space-y-3">
+                <a href="#accueil" class="block hover:text-neutral-400 nav-home">Accueil</a>
+                <a href="#signaux" class="block hover:text-neutral-400 nav-home">Signaux</a>
+                <a href="#stats" class="block hover:text-neutral-400 nav-home">Statistiques</a>
+                <a href="#tarifs" class="block hover:text-neutral-400 nav-home">Tarifs</a>
+                <a href="#temoignages" class="block hover:text-neutral-400 nav-home">Témoignages</a>
+                <button onclick="openModal('login-modal')" class="block w-full text-left hover:text-neutral-400" id="mobile-login-btn">Connexion</button>
+                <button onclick="navigateTo('signals')" class="hidden w-full text-left hover:text-neutral-400" id="mobile-signals-btn">
+                    <i class="fas fa-signal mr-2"></i>Mes Signaux
+                </button>
+                <button onclick="logout()" class="hidden w-full text-left text-red-400 hover:text-red-300" id="mobile-logout-btn">
+                    <i class="fas fa-sign-out-alt mr-2"></i>Déconnexion
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ==================== HOME PAGE ==================== -->
+    <div id="home-page" class="page active">
+        <!-- Hero Section -->
+        <section id="accueil" class="min-h-screen flex items-center pt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+                <div class="grid lg:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <div class="inline-flex items-center px-4 py-2 bg-white/5 border border-white/20 rounded-full mb-6">
+                            <span class="w-2 h-2 bg-white rounded-full mr-2 pulse-white"></span>
+                            <span class="text-neutral-300 text-sm">+27 traders actifs</span>
+                        </div>
+                        <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-6">
+                            Tradez comme un <span class="gradient-text">professionnel</span>
+                        </h1>
+                        <p class="text-neutral-400 text-lg mb-8">
+                            Rejoignez la communauté de trading la plus performante. Accédez à des signaux exclusifs, des analyses en temps réel et une formation continue.
+                        </p>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <a href="https://discord.gg/xDXj7fYWa5" target="_blank" class="px-8 py-4 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition transform hover:scale-105 text-center">
+                                <i class="fab fa-discord mr-2"></i>Rejoindre Discord
+                            </a>
+                            <button onclick="openModal('demo-modal')" class="px-8 py-4 border border-neutral-600 hover:border-white rounded-xl font-semibold transition">
+                                <i class="fas fa-play mr-2"></i>Voir la démo
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-8 mt-10">
+                            <div>
+                                <p class="text-3xl font-bold text-white">87%</p>
+                                <p class="text-neutral-500 text-sm">Taux de réussite</p>
+                            </div>
+                            <div class="w-px h-12 bg-neutral-700"></div>
+                            <div>
+                                <p class="text-3xl font-bold text-white">1</p>
+                                <p class="text-neutral-500 text-sm">live par jour</p>
+                            </div>
+                            <div class="w-px h-12 bg-neutral-700"></div>
+                            <div>
+                                <p class="text-3xl font-bold text-white">24/7</p>
+                                <p class="text-neutral-500 text-sm">Support</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="relative">
+                        <div class="animate-float">
+                            <svg viewBox="0 0 400 300" class="w-full">
+                                <defs>
+                                    <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#ffffff;stop-opacity:0.2" />
+                                        <stop offset="100%" style="stop-color:#ffffff;stop-opacity:0" />
+                                    </linearGradient>
+                                </defs>
+                                <path d="M0,250 Q50,200 100,220 T200,150 T300,180 T400,80 L400,300 L0,300 Z" fill="url(#chartGradient)"/>
+                                <path d="M0,250 Q50,200 100,220 T200,150 T300,180 T400,80" fill="none" stroke="#ffffff" stroke-width="3" class="chart-line"/>
+                                <circle cx="400" cy="80" r="8" fill="#ffffff" class="pulse-white"/>
+                            </svg>
+                        </div>
+                        <div class="absolute top-10 right-10 bg-neutral-900/80 backdrop-blur p-4 rounded-xl border border-neutral-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-arrow-up text-green-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-neutral-400">XAU/USD</p>
+                                    <p class="font-bold text-green-400">+19.34%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute bottom-20 left-0 bg-neutral-900/80 backdrop-blur p-4 rounded-xl border border-neutral-700">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center">
+                                    <i class="fab fa-bitcoin text-orange-400"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm text-neutral-400">BTC/USD</p>
+                                    <p class="font-bold text-green-400">+5.67%</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Signaux Section -->
+        <section id="signaux" class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Signaux en <span class="gradient-text">temps réel</span></h2>
+                    <p class="text-neutral-400 max-w-2xl mx-auto">Recevez des alertes instantanées sur les meilleures opportunités de trading identifiées par Abbaraï.</p>
+                </div>
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Signal Card 1 -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6 card-glow transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center">
+                                    <span class="text-xl font-bold text-white">€</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">EUR/USD</h3>
+                                    <p class="text-neutral-500 text-sm">Forex</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">BUY</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Entrée</span>
+                                <span class="font-semibold">1.0865</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Take Profit</span>
+                                <span class="font-semibold text-green-400">1.0920</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Stop Loss</span>
+                                <span class="font-semibold text-red-400">1.0830</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Risk/Reward</span>
+                                <span class="font-semibold">1:2.4</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-neutral-700 flex items-center justify-between">
+                            <span class="text-neutral-500 text-sm"><i class="far fa-clock mr-1"></i>Il y a 2h</span>
+                            <span class="text-green-400 text-sm font-semibold">En cours</span>
+                        </div>
+                    </div>
+
+                    <!-- Signal Card 2 -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6 card-glow transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+                                    <i class="fab fa-bitcoin text-orange-400 text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">BTC/USD</h3>
+                                    <p class="text-neutral-500 text-sm">Crypto</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-green-500/20 text-green-400 text-sm rounded-full">BUY</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Entrée</span>
+                                <span class="font-semibold">90.800</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Take Profit</span>
+                                <span class="font-semibold text-green-400">93.800</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Stop Loss</span>
+                                <span class="font-semibold text-red-400">89.800</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Risk/Reward</span>
+                                <span class="font-semibold">1:3</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-neutral-700 flex items-center justify-between">
+                            <span class="text-neutral-500 text-sm"><i class="far fa-clock mr-1"></i>Il y a 5h</span>
+                            <span class="text-green-400 text-sm font-semibold">+3.2%</span>
+                        </div>
+                    </div>
+
+                    <!-- Signal Card 3 -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6 card-glow transition">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center">
+                                    <span class="text-xl">🥇</span>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold">XAU/USD</h3>
+                                    <p class="text-neutral-500 text-sm">Matières Premières</p>
+                                </div>
+                            </div>
+                            <span class="px-3 py-1 bg-red-500/20 text-red-400 text-sm rounded-full">SELL</span>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Entrée</span>
+                                <span class="font-semibold">4,112</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Take Profit</span>
+                                <span class="font-semibold text-green-400">4,073</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Stop Loss</span>
+                                <span class="font-semibold text-red-400">4,120</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-neutral-400">Risk/Reward</span>
+                                <span class="font-semibold">1:6.7</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-neutral-700 flex items-center justify-between">
+                            <span class="text-neutral-500 text-sm"><i class="far fa-clock mr-1"></i>Il y a 30min</span>
+                            <span class="text-yellow-400 text-sm font-semibold">En attente</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-12">
+                    <p class="text-neutral-400 mb-4">Accédez à tous nos signaux en rejoignant la communauté</p>
+                    <button onclick="openModal('register-modal')" class="px-8 py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">
+                        <i class="fas fa-unlock mr-2"></i>Débloquer tous les signaux
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Section -->
+        <section id="stats" class="py-20 bg-neutral-900/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Nos <span class="gradient-text">performances</span></h2>
+                    <p class="text-neutral-400 max-w-2xl mx-auto">Des résultats vérifiables et transparents pour une confiance totale.</p>
+                </div>
+                <div class="grid md:grid-cols-4 gap-6">
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8 text-center">
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-chart-pie text-white text-2xl"></i>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="stat1">0</p>
+                        <p class="text-neutral-400">Taux de réussite</p>
+                    </div>
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8 text-center">
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-signal text-white text-2xl"></i>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="stat2">0</p>
+                        <p class="text-neutral-400">Signaux envoyés</p>
+                    </div>
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8 text-center">
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-users text-white text-2xl"></i>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="stat3">0</p>
+                        <p class="text-neutral-400">Membres actifs</p>
+                    </div>
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8 text-center">
+                        <div class="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <i class="fas fa-trophy text-white text-2xl"></i>
+                        </div>
+                        <p class="text-4xl font-bold mb-2" id="stat4">0</p>
+                        <p class="text-neutral-400">nombre de payouts</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section id="tarifs" class="py-20">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Choisissez votre <span class="gradient-text">plan</span></h2>
+                    <p class="text-neutral-400 max-w-2xl mx-auto">Des offres adaptées à tous les niveaux de trading.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-8">
+                    <!-- Basic Plan -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8">
+                        <h3 class="text-xl font-bold mb-2">Starter</h3>
+                        <p class="text-neutral-400 mb-6">Pour les débutants</p>
+                        <div class="mb-6">
+                            <span class="text-4xl font-bold">29€</span>
+                            <span class="text-neutral-400">/mois</span>
+                        </div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>formation vidéos/livre</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Analyses quotidiennes</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Accès Discord</span>
+                            </li>
+                            <li class="flex items-center gap-3 text-neutral-500">
+                                <i class="fas fa-times"></i>
+                                <span>Sessions live</span>
+                            </li>
+                            <li class="flex items-center gap-3 text-neutral-500">
+                                <i class="fas fa-times"></i>
+                                <span>Coaching 1-to-1</span>
+                            </li>
+                        </ul>
+                        <button onclick="selectPlan('Starter - 29€/mois')" class="w-full py-3 border border-neutral-600 hover:border-white rounded-xl font-semibold transition">Commencer</button>
+                    </div>
+
+                    <!-- Pro Plan -->
+                    <div class="bg-gradient-to-b from-white/10 to-neutral-900/50 border border-white/30 rounded-2xl p-8 relative transform md:scale-105">
+                        <div class="absolute -top-4 left-1/2 -translate-x-1/2 px-4 py-1 bg-white text-black rounded-full text-sm font-semibold">Populaire</div>
+                        <h3 class="text-xl font-bold mb-2">Pro</h3>
+                        <p class="text-neutral-400 mb-6">Pour les traders sérieux</p>
+                        <div class="mb-6">
+                            <span class="text-4xl font-bold">79€</span>
+                            <span class="text-neutral-400">/mois</span>
+                        </div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Signaux privés</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Analyses sessions en live</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Accès Discord VIP</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>plan du jour</span>
+                            </li>
+                            <li class="flex items-center gap-3 text-neutral-500">
+                                <i class="fas fa-times"></i>
+                                <span>Coaching 1-to-1</span>
+                            </li>
+                        </ul>
+                        <button onclick="selectPlan('Pro - 79€/mois')" class="w-full py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">Commencer</button>
+                    </div>
+
+                    <!-- Elite Plan -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-8">
+                        <h3 class="text-xl font-bold mb-2">Elite</h3>
+                        <p class="text-neutral-400 mb-6">Pour les professionnels</p>
+                        <div class="mb-6">
+                            <span class="text-4xl font-bold">199€</span>
+                            <span class="text-neutral-400">/mois</span>
+                        </div>
+                        <ul class="space-y-4 mb-8">
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Tout du plan Pro</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Coaching 1-to-1</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>réductions sur vos propfirms</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Groupe privé</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <i class="fas fa-check text-white"></i>
+                                <span>Support prioritaire</span>
+                            </li>
+                        </ul>
+                        <button onclick="selectPlan('Elite - 199€/mois')" class="w-full py-3 border border-neutral-600 hover:border-white rounded-xl font-semibold transition">Commencer</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section id="temoignages" class="py-20 bg-neutral-900/50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Ce que disent nos <span class="gradient-text">membres</span></h2>
+                    <p class="text-neutral-400 max-w-2xl mx-auto">Découvrez les témoignages de nos élèves qui ont payouts.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex items-center gap-1 mb-4">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                        </div>
+                        <p class="text-neutral-300 mb-6">"Grâce à Abbaraï, j'ai enfin une approche structurée du trading. Les vidéos et le livre sont précis et le support est incroyable. Chaque matin j'ai mon plan du jour en 15min"</p>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-neutral-400 to-neutral-600 rounded-full flex items-center justify-center font-bold">ND</div>
+                            <div>
+                                <p class="font-semibold">Nolhan.D</p>
+                                <p class="text-neutral-500 text-sm">Trader depuis 1 an</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex items-center gap-1 mb-4">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                        </div>
+                        <p class="text-neutral-300 mb-6">"La communauté Discord est super active et bienveillante. J'apprends chaque jour de nouvelles techniques. Le plan Pro vaut vraiment son prix!"</p>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-neutral-400 to-neutral-600 rounded-full flex items-center justify-center font-bold">SM</div>
+                            <div>
+                                <p class="font-semibold">Syrelle.M</p>
+                                <p class="text-neutral-500 text-sm">Tradeuse depuis 5 mois</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex items-center gap-1 mb-4">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                            <i class="fas fa-star text-yellow-400"></i>
+                        </div>
+                        <p class="text-neutral-300 mb-6">"Le coaching 1-to-1 du plan Elite m'a permis de passer au niveau supérieur. Les analyses sont pertinentes et m'ont fait gagner un temps précieux."</p>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-neutral-400 to-neutral-600 rounded-full flex items-center justify-center font-bold">QA</div>
+                            <div>
+                                <p class="font-semibold">Quentin.A</p>
+                                <p class="text-neutral-500 text-sm">Trader depuis 2 semaines</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section id="faq" class="py-20">
+            <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="text-center mb-16">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Questions <span class="gradient-text">fréquentes</span></h2>
+                    <p class="text-neutral-400">Tout ce que vous devez savoir avant de nous rejoindre.</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="faq-item bg-neutral-900/50 border border-neutral-700 rounded-xl overflow-hidden">
+                        <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between" onclick="toggleFaq(this)">
+                            <span class="font-semibold">Comment fonctionne Dxb Trading ?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="faq-content px-6 pb-4 hidden">
+                            <p class="text-neutral-400">Dxb Trading vous donne accès à une communauté Discord où Abbaraï partage des signaux de trading en temps réel, des analyses de marché et des sessions de formation live. Vous recevez des alertes directement sur le site ou Telegram.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item bg-neutral-900/50 border border-neutral-700 rounded-xl overflow-hidden">
+                        <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between" onclick="toggleFaq(this)">
+                            <span class="font-semibold">Quel capital minimum pour commencer ?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="faq-content px-6 pb-4 hidden">
+                            <p class="text-neutral-400">Nous recommandons un capital minimum de 500€ pour bien gérer le risque, mais nos signaux sont adaptables à tous les capitaux. L'important est de respecter un money management strict (1-5% par trade maximum).</p>
+                        </div>
+                    </div>
+                    <div class="faq-item bg-neutral-900/50 border border-neutral-700 rounded-xl overflow-hidden">
+                        <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between" onclick="toggleFaq(this)">
+                            <span class="font-semibold">Puis-je annuler mon abonnement ?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="faq-content px-6 pb-4 hidden">
+                            <p class="text-neutral-400">Oui, vous pouvez annuler votre abonnement à tout moment depuis votre espace membre. Aucun engagement, aucune pénalité. Votre accès reste actif jusqu'à la fin de la période payée.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item bg-neutral-900/50 border border-neutral-700 rounded-xl overflow-hidden">
+                        <button class="faq-btn w-full px-6 py-4 text-left flex items-center justify-between" onclick="toggleFaq(this)">
+                            <span class="font-semibold">Quels marchés couvrez-vous ?</span>
+                            <i class="fas fa-chevron-down transition-transform"></i>
+                        </button>
+                        <div class="faq-content px-6 pb-4 hidden">
+                            <p class="text-neutral-400">Nous couvrons le Forex ( EUR/USD, GBP/USD ), les indices ( Dow Jones, NASDAQ ) le BTC et le XAUUSD.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-20">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                <div class="bg-gradient-to-r from-white/5 to-white/10 border border-white/20 rounded-3xl p-12">
+                    <h2 class="text-3xl md:text-4xl font-bold mb-4">Prêt à transformer votre trading?</h2>
+                    <p class="text-neutral-400 mb-8 max-w-xl mx-auto">Rejoignez plus de 27 traders qui ont déjà fait confiance à DxB Trading dont 17 ayant payouts. Commencez avec un essai gratuit de 7 jours.</p>
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="selectPlan('Essai Gratuit 7 jours')" class="px-8 py-4 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition transform hover:scale-105">
+                            Essai gratuit 7 jours
+                        </button>
+                        <button onclick="openModal('contact-modal')" class="px-8 py-4 border border-neutral-600 hover:border-white rounded-xl font-semibold transition">
+                            Nous contacter
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="py-12 border-t border-neutral-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="grid md:grid-cols-4 gap-8 mb-8">
+                    <div>
+                        <div class="flex items-center space-x-2 mb-4">
+                            <i class="fas fa-chart-line text-white text-2xl"></i>
+                            <span class="text-xl font-bold">DxB <span class="text-neutral-400">Trading</span></span>
+                        </div>
+                        <p class="text-neutral-400 text-sm">La communauté de trading la plus performante.</p>
+                        
+                        <div class="flex gap-4 mt-4">
+                            <a href="https://discord.gg/xDXj7fYWa5" target="_blank" class="w-10 h-10 bg-neutral-800 hover:bg-[#5865F2] rounded-lg flex items-center justify-center transition group" title="Discord">
+                                <i class="fab fa-discord text-neutral-400 group-hover:text-white"></i>
+                            </a>
+                            <a href="https://x.com/wcknu_" target="_blank" class="w-10 h-10 bg-neutral-800 hover:bg-white rounded-lg flex items-center justify-center transition group" title="Twitter/X">
+                                <svg class="w-4 h-4 fill-neutral-400 group-hover:fill-black" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            </a>
+                            <a href="https://www.instagram.com/useruae27/" target="_blank" class="w-10 h-10 bg-neutral-800 hover:bg-gradient-to-br hover:from-purple-600 hover:to-pink-500 rounded-lg flex items-center justify-center transition group" title="Instagram">
+                                <i class="fab fa-instagram text-neutral-400 group-hover:text-white"></i>
+                            </a>
+                            <a href="https://t.me/+8hYgvHkF2UdmOTI8" target="_blank" class="w-10 h-10 bg-neutral-800 hover:bg-[#0088cc] rounded-lg flex items-center justify-center transition group" title="Telegram">
+                                <i class="fab fa-telegram text-neutral-400 group-hover:text-white"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-4">Liens rapides</h4>
+                        <ul class="space-y-2 text-neutral-400">
+                            <li><a href="#accueil" class="hover:text-white transition">Accueil</a></li>
+                            <li><a href="#signaux" class="hover:text-white transition">Signaux</a></li>
+                            <li><a href="#tarifs" class="hover:text-white transition">Tarifs</a></li>
+                            <li><a href="#faq" class="hover:text-white transition">FAQ</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-4">Légal</h4>
+                        <ul class="space-y-2 text-neutral-400">
+                            <li><a href="#" onclick="showToast('Page CGV à créer')" class="hover:text-white transition">CGV</a></li>
+                            <li><a href="#" onclick="showToast('Page Confidentialité à créer')" class="hover:text-white transition">Politique de confidentialité</a></li>
+                            <li><a href="#" onclick="showToast('Page Mentions légales à créer')" class="hover:text-white transition">Mentions légales</a></li>
+                            <li><a href="#" onclick="showToast('Page Avertissement à créer')" class="hover:text-white transition">Avertissement risques</a></li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-4">Newsletter</h4>
+                        <p class="text-neutral-400 text-sm mb-4">Recevez nos analyses gratuites chaque semaine.</p>
+                        <form id="newsletter-form" class="flex gap-2">
+                            <input type="email" id="newsletter-email" required placeholder="Votre email" class="flex-1 px-4 py-2 bg-neutral-800 border border-neutral-700 rounded-lg focus:outline-none focus:border-white">
+                            <button type="submit" class="px-4 py-2 bg-white hover:bg-neutral-200 text-black rounded-lg transition">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <div class="pt-8 border-t border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-4">
+                    <p class="text-neutral-500 text-sm">© 2024 DxB Trading Community. Tous droits réservés.</p>
+                    <p class="text-neutral-500 text-sm">⚠️ Le trading comporte des risques de perte en capital.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- ==================== SIGNALS PAGE (User Dashboard) ==================== -->
+    <div id="signals-page" class="page">
+        <div class="min-h-screen pt-20 pb-12">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">📊 Espace Membre</h1>
+                        <p class="text-neutral-400">Signaux, chat et suivi de performances</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-500/30 rounded-full">
+                            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            <span class="text-green-400 text-sm">En ligne</span>
+                        </div>
+                        <button onclick="navigateTo('home')" class="px-4 py-2 border border-neutral-600 hover:border-white rounded-lg transition">
+                            <i class="fas fa-arrow-left mr-2"></i>Retour
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <button onclick="switchTab('signals')" class="tab-btn active px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-tab="signals">
+                        <i class="fas fa-signal mr-2"></i>Signaux
+                    </button>
+                    <button onclick="switchTab('chat')" class="tab-btn px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-tab="chat">
+                        <i class="fas fa-comments mr-2"></i>Chat
+                    </button>
+                    <button onclick="switchTab('calendar')" class="tab-btn px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-tab="calendar">
+                        <i class="fas fa-calendar-alt mr-2"></i>Mon Calendrier
+                    </button>
+                </div>
+
+                <!-- Signals Tab -->
+                <div id="tab-signals" class="tab-content">
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold" id="total-signals">0</p>
+                            <p class="text-neutral-400 text-sm">Signaux reçus</p>
+                        </div>
+                        <div class="bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold text-green-400" id="win-signals">0</p>
+                            <p class="text-neutral-400 text-sm">Gagnants</p>
+                        </div>
+                        <div class="bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold text-red-400" id="loss-signals">0</p>
+                            <p class="text-neutral-400 text-sm">Perdants</p>
+                        </div>
+                        <div class="bg-neutral-900/50 border border-neutral-700 rounded-xl p-4 text-center">
+                            <p class="text-2xl font-bold text-yellow-400" id="pending-signals">0</p>
+                            <p class="text-neutral-400 text-sm">En cours</p>
+                        </div>
+                    </div>
+
+                    <!-- Signals List -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">Signaux récents</h2>
+                            <button onclick="refreshSignals()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition">
+                                <i class="fas fa-sync-alt mr-2"></i>Actualiser
+                            </button>
+                        </div>
+                        
+                        <div id="signals-list" class="space-y-4">
+                            <div class="text-center py-12 text-neutral-400">
+                                <i class="fas fa-signal text-4xl mb-4"></i>
+                                <p>Aucun signal pour le moment</p>
+                                <p class="text-sm">Les nouveaux signaux apparaîtront ici en temps réel</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Tab -->
+                <div id="tab-chat" class="tab-content hidden">
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl overflow-hidden">
+                        <!-- Chat Header -->
+                        <div class="p-4 border-b border-neutral-700 flex justify-between items-center">
+                            <div>
+                                <h2 class="text-xl font-bold"><i class="fas fa-comments mr-2"></i>Chat Communauté</h2>
+                                <p class="text-neutral-400 text-sm" id="online-users">0 membre(s) en ligne</p>
+                            </div>
+                        </div>
+
+                        <!-- Chat Messages -->
+                        <div id="chat-messages" class="chat-container p-4 space-y-4">
+                            <div class="text-center py-8 text-neutral-400">
+                                <i class="fas fa-comments text-4xl mb-4"></i>
+                                <p>Bienvenue dans le chat !</p>
+                                <p class="text-sm">Commencez à discuter avec la communauté</p>
+                            </div>
+                        </div>
+
+                        <!-- Chat Input -->
+                        <div class="p-4 border-t border-neutral-700">
+                            <form id="chat-form" class="flex gap-3">
+                                <input type="file" id="chat-image-input" accept="image/*" class="hidden" onchange="handleImageUpload(this)">
+                                <button type="button" onclick="document.getElementById('chat-image-input').click()" class="px-4 py-3 bg-neutral-800 hover:bg-neutral-700 rounded-xl transition" title="Envoyer une image">
+                                    <i class="fas fa-image"></i>
+                                </button>
+                                <input type="text" id="chat-input" maxlength="500" class="flex-1 px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="Votre message...">
+                                <button type="submit" class="px-6 py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Calendar Tab -->
+                <div id="tab-calendar" class="tab-content hidden">
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <!-- Calendar Header -->
+                        <div class="flex justify-between items-center mb-6">
+                            <button onclick="changeMonth(-1)" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h2 class="text-xl font-bold" id="calendar-month-year">Janvier 2024</h2>
+                            <button onclick="changeMonth(1)" class="p-2 hover:bg-white/10 rounded-lg transition">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- User info for calendar -->
+                        <div class="mb-4 p-3 bg-white/5 rounded-lg text-center">
+                            <p class="text-sm text-neutral-400">📅 Calendrier personnel de <span id="calendar-user-name" class="text-white font-semibold">-</span></p>
+                        </div>
+
+                        <!-- Calendar Stats -->
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="bg-black/50 border border-neutral-700 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-green-400" id="month-gains">+0€</p>
+                                <p class="text-neutral-400 text-sm">Gains</p>
+                            </div>
+                            <div class="bg-black/50 border border-neutral-700 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold text-red-400" id="month-losses">-0€</p>
+                                <p class="text-neutral-400 text-sm">Pertes</p>
+                            </div>
+                            <div class="bg-black/50 border border-neutral-700 rounded-xl p-4 text-center">
+                                <p class="text-2xl font-bold" id="month-total">0€</p>
+                                <p class="text-neutral-400 text-sm">Total</p>
+                            </div>
+                        </div>
+
+                        <!-- Calendar Grid -->
+                        <div class="grid grid-cols-7 gap-2 mb-4">
+                            <div class="text-center text-neutral-500 text-sm py-2">Lun</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Mar</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Mer</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Jeu</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Ven</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Sam</div>
+                            <div class="text-center text-neutral-500 text-sm py-2">Dim</div>
+                        </div>
+                        <div id="calendar-grid" class="grid grid-cols-7 gap-2">
+                            <!-- Days will be generated dynamically -->
+                        </div>
+
+                        <!-- Legend -->
+                        <div class="flex justify-center gap-6 mt-6 text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-green-500/30 border border-green-500 rounded"></div>
+                                <span class="text-neutral-400">Gain</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-red-500/30 border border-red-500 rounded"></div>
+                                <span class="text-neutral-400">Perte</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-4 h-4 bg-neutral-700 border border-neutral-600 rounded"></div>
+                                <span class="text-neutral-400">Pas de trade</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== ADMIN PAGE ==================== -->
+    <div id="admin-page" class="page">
+        <div class="min-h-screen pt-20 pb-12">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h1 class="text-3xl font-bold mb-2">⚙️ Panel Admin</h1>
+                        <p class="text-neutral-400">Gérez les élèves, signaux et newsletter</p>
+                    </div>
+                    <button onclick="navigateTo('signals')" class="px-4 py-2 border border-neutral-600 hover:border-white rounded-lg transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Retour
+                    </button>
+                </div>
+
+                <!-- Admin Tabs -->
+                <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                    <button onclick="switchAdminTab('students')" class="admin-tab-btn active px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-admin-tab="students">
+                        <i class="fas fa-users mr-2"></i>Élèves
+                    </button>
+                    <button onclick="switchAdminTab('signals')" class="admin-tab-btn px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-admin-tab="signals">
+                        <i class="fas fa-signal mr-2"></i>Signaux
+                    </button>
+                    <button onclick="switchAdminTab('newsletter')" class="admin-tab-btn px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-admin-tab="newsletter">
+                        <i class="fas fa-envelope mr-2"></i>Newsletter
+                    </button>
+                    <button onclick="switchAdminTab('nous contactez')" class="admin-tab-btn px-6 py-3 border border-neutral-700 rounded-xl font-semibold transition whitespace-nowrap" data-admin-tab="newsletter">
+                        <i class="fas fa-envelope mr-2"></i>nous contactez
+                    </button>
+                </div>
+
+                <!-- Students Tab -->
+                <div id="admin-tab-students" class="admin-tab-content">
+                    <!-- Create Student Account Form -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6 mb-8">
+                        <h2 class="text-xl font-bold mb-6">👤 Créer un compte élève</h2>
+                        
+                        <form id="create-user-form" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Prénom</label>
+                                    <input type="text" id="new-user-firstname" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="Jean">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Nom</label>
+                                    <input type="text" id="new-user-lastname" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="Dupont">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Email</label>
+                                    <input type="email" id="new-user-email" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="eleve@email.com">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Mot de passe</label>
+                                    <input type="text" id="new-user-password" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="motdepasse123">
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition">
+                                <i class="fas fa-user-plus mr-2"></i>Créer le compte
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Students List -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">📋 Liste des élèves</h2>
+                            <span class="px-3 py-1 bg-white/10 rounded-full text-sm" id="students-count">0 élèves</span>
+                        </div>
+                        <div id="students-list" class="space-y-3">
+                            <div class="text-center py-8 text-neutral-400">
+                                <p>Aucun élève inscrit</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Signals Tab -->
+                <div id="admin-tab-signals" class="admin-tab-content hidden">
+                    <!-- Send Signal Form -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6 mb-8">
+                        <h2 class="text-xl font-bold mb-6">📤 Envoyer un nouveau signal</h2>
+                        
+                        <form id="signal-form" class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Paire / Actif</label>
+                                    <select id="signal-pair" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white">
+                                        <option value="EUR/USD">EUR/USD</option>
+                                        <option value="GBP/USD">GBP/USD</option>
+                                        <option value="USD/JPY">USD/JPY</option>
+                                        <option value="BTC/USD">BTC/USD</option>
+                                        <option value="ETH/USD">ETH/USD</option>
+                                        <option value="XAU/USD">XAU/USD (Gold)</option>
+                                        <option value="US30">US30 (Dow Jones)</option>
+                                        <option value="NAS100">NAS100 (Nasdaq)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Direction</label>
+                                    <select id="signal-direction" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white">
+                                        <option value="BUY">🟢 BUY (Achat)</option>
+                                        <option value="SELL">🔴 SELL (Vente)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Prix d'entrée</label>
+                                    <input type="text" id="signal-entry" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="1.0865">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Take Profit</label>
+                                    <input type="text" id="signal-tp" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="1.0920">
+                                </div>
+                                <div>
+                                    <label class="block text-sm text-neutral-400 mb-2">Stop Loss</label>
+                                    <input type="text" id="signal-sl" required class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white" placeholder="1.0830">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm text-neutral-400 mb-2">Commentaire (optionnel)</label>
+                                <textarea id="signal-comment" rows="2" class="w-full px-4 py-3 bg-black border border-neutral-700 rounded-xl focus:outline-none focus:border-white resize-none" placeholder="Analyse technique, contexte du marché..."></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full py-4 bg-white hover:bg-neutral-200 text-black rounded-xl font-semibold transition text-lg">
+                                <i class="fas fa-paper-plane mr-2"></i>Envoyer le signal
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Recent Signals Sent -->
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">📋 Signaux envoyés</h2>
+                            <button onclick="clearAllSignals()" class="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition">
+                                <i class="fas fa-trash mr-2"></i>Tout supprimer
+                            </button>
+                        </div>
+                        
+                        <div id="admin-signals-list" class="space-y-4">
+                            <div class="text-center py-8 text-neutral-400">
+                                <p>Aucun signal envoyé</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Newsletter Tab -->
+                <div id="admin-tab-newsletter" class="admin-tab-content hidden">
+                    <div class="bg-neutral-900/50 border border-neutral-700 rounded-2xl p-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold">📧 Emails Newsletter</h2>
+                            <div class="flex gap-2">
+                                <span class="px-3 py-1 bg-white/10 rounded-full text-sm" id="newsletter-count">0 emails</span>
+                                <button onclick="exportNewsletterEmails()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition text-sm">
+                                    <i class="fas fa-download mr-2"></i>Exporter
+                                </button>
+                                <button onclick="clearNewsletterEmails()" class="px-4 py-2 bg-red-500/20 text-red-400 hover:bg-red-500/30 rounded-lg transition text-sm">
+                                    <i class="fas fa-trash mr-2"></i>Vider
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <p class="text-neutral-400 mb-4">Liste des personnes inscrites à la newsletter pour recevoir les analyses hebdomadaires :</p>
+                        
+                        <div id="newsletter-list" class="space-y-2 max-h-96 overflow-y-auto">
+                            <div class="text-center py-8 text-neutral-400">
+                                <i class="fas fa-envelope text-4xl mb-4"></i>
+                                <p>Aucun email inscrit</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ═══════════════════════════════════════════════════════════════
+        // CONFIGURATION
+        // ═══════════════════════════════════════════════════════════════
+        const CONFIG = {
+            discordLink: "https://discord.gg/xDXj7fYWa5",
+            adminEmail: "admin@gmail.com",
+            adminPassword: "001011010001"
+        };
+
+        // ═══════════════════════════════════════════════════════════════
+        // DATABASE (localStorage)
+        // ═══════════════════════════════════════════════════════════════
+        function getUsers() {
+            return JSON.parse(localStorage.getItem('dxb_users') || '[]');
+        }
+
+        function saveUsers(users) {
+            localStorage.setItem('dxb_users', JSON.stringify(users));
+        }
+
+        function getSignals() {
+            return JSON.parse(localStorage.getItem('dxb_signals') || '[]');
+        }
+
+        function saveSignals(signals) {
+            localStorage.setItem('dxb_signals', JSON.stringify(signals));
+        }
+
+        function getCurrentUser() {
+            return JSON.parse(localStorage.getItem('dxb_current_user') || 'null');
+        }
+
+        function setCurrentUser(user) {
+            localStorage.setItem('dxb_current_user', JSON.stringify(user));
+        }
+
+        function getChatMessages() {
+            return JSON.parse(localStorage.getItem('dxb_chat') || '[]');
+        }
+
+        function saveChatMessages(messages) {
+            localStorage.setItem('dxb_chat', JSON.stringify(messages));
+        }
+
+        function getCalendarData(userEmail) {
+            const allData = JSON.parse(localStorage.getItem('dxb_calendars') || '{}');
+            return allData[userEmail] || {};
+        }
+
+        function saveCalendarData(userEmail, data) {
+            const allData = JSON.parse(localStorage.getItem('dxb_calendars') || '{}');
+            allData[userEmail] = data;
+            localStorage.setItem('dxb_calendars', JSON.stringify(allData));
+        }
+
+        function getNewsletterEmails() {
+            return JSON.parse(localStorage.getItem('dxb_newsletter') || '[]');
+        }
+
+        function saveNewsletterEmails(emails) {
+            localStorage.setItem('dxb_newsletter', JSON.stringify(emails));
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // AUTHENTICATION
+        // ═══════════════════════════════════════════════════════════════
+        function login(email, password) {
+            if (email === CONFIG.adminEmail && password === CONFIG.adminPassword) {
+                const adminUser = {
+                    email: email,
+                    firstname: 'Admin',
+                    lastname: '',
+                    isAdmin: true
+                };
+                setCurrentUser(adminUser);
+                updateUI();
+                return true;
+            }
+
+            const users = getUsers();
+            const user = users.find(u => u.email === email && u.password === password);
+            if (user) {
+                setCurrentUser({...user, isAdmin: false});
+                updateUI();
+                return true;
+            }
+
+            return false;
+        }
+
+        function logout() {
+            setCurrentUser(null);
+            updateUI();
+            navigateTo('home');
+            showToast('Déconnexion réussie');
+        }
+
+        function updateUI() {
+            const user = getCurrentUser();
+            const authButtons = document.getElementById('auth-buttons');
+            const userMenu = document.getElementById('user-menu');
+            const adminBtn = document.getElementById('admin-btn');
+            const mobileLoginBtn = document.getElementById('mobile-login-btn');
+            const mobileSignalsBtn = document.getElementById('mobile-signals-btn');
+            const mobileLogoutBtn = document.getElementById('mobile-logout-btn');
+
+            if (user) {
+                authButtons.classList.add('hidden');
+                userMenu.classList.remove('hidden');
+                userMenu.classList.add('flex');
+                
+                document.getElementById('user-name').textContent = user.firstname;
+                document.getElementById('user-avatar').textContent = user.firstname.charAt(0).toUpperCase();
+
+                if (user.isAdmin) {
+                    adminBtn.classList.remove('hidden');
+                } else {
+                    adminBtn.classList.add('hidden');
+                }
+
+                mobileLoginBtn.classList.add('hidden');
+                mobileSignalsBtn.classList.remove('hidden');
+                mobileLogoutBtn.classList.remove('hidden');
+            } else {
+                authButtons.classList.remove('hidden');
+                userMenu.classList.add('hidden');
+                userMenu.classList.remove('flex');
+
+                mobileLoginBtn.classList.remove('hidden');
+                mobileSignalsBtn.classList.add('hidden');
+                mobileLogoutBtn.classList.add('hidden');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // NAVIGATION & TABS
+        // ═══════════════════════════════════════════════════════════════
+        function navigateTo(page) {
+            const user = getCurrentUser();
+
+            if ((page === 'signals' || page === 'admin') && !user) {
+                showToast('Veuillez vous connecter');
+                openModal('login-modal');
+                return;
+            }
+
+            if (page === 'admin' && !user?.isAdmin) {
+                showToast('Accès refusé');
+                return;
+            }
+
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`${page}-page`).classList.add('active');
+
+            if (page === 'signals') {
+                refreshSignals();
+                refreshChat();
+                renderCalendar();
+            }
+
+            if (page === 'admin') {
+                refreshAdminSignals();
+                refreshStudentsList();
+                refreshNewsletterList();
+            }
+
+            window.scrollTo(0, 0);
+            document.getElementById('mobile-menu').classList.add('hidden');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+
+            if (tabName === 'chat') {
+                refreshChat();
+                scrollChatToBottom();
+            }
+            if (tabName === 'calendar') {
+                renderCalendar();
+            }
+        }
+
+        function switchAdminTab(tabName) {
+            document.querySelectorAll('.admin-tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.add('hidden'));
+
+            document.querySelector(`[data-admin-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`admin-tab-${tabName}`).classList.remove('hidden');
+
+            if (tabName === 'newsletter') {
+                refreshNewsletterList();
+            }
+            if (tabName === 'signals') {
+                refreshAdminSignals();
+            }
+            if (tabName === 'students') {
+                refreshStudentsList();
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // SIGNALS MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════
+        function sendSignal(pair, direction, entry, tp, sl, comment) {
+            const signals = getSignals();
+            const newSignal = {
+                id: Date.now(),
+                pair,
+                direction,
+                entry,
+                tp,
+                sl,
+                comment,
+                status: 'pending',
+                timestamp: new Date().toISOString(),
+                isNew: true
+            };
+
+            signals.unshift(newSignal);
+            saveSignals(signals);
+            localStorage.setItem('dxb_signal_update', Date.now().toString());
+
+            return newSignal;
+        }
+
+        function refreshSignals() {
+            const signals = getSignals();
+            const container = document.getElementById('signals-list');
+
+            document.getElementById('total-signals').textContent = signals.length;
+            document.getElementById('win-signals').textContent = signals.filter(s => s.status === 'win').length;
+            document.getElementById('loss-signals').textContent = signals.filter(s => s.status === 'loss').length;
+            document.getElementById('pending-signals').textContent = signals.filter(s => s.status === 'pending').length;
+
+            if (signals.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-12 text-neutral-400">
+                        <i class="fas fa-signal text-4xl mb-4"></i>
+                        <p>Aucun signal pour le moment</p>
+                        <p class="text-sm">Les nouveaux signaux apparaîtront ici en temps réel</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = signals.map(signal => createSignalCard(signal)).join('');
+
+            signals.forEach(s => s.isNew = false);
+            saveSignals(signals);
+        }
+
+        function createSignalCard(signal) {
+            const date = new Date(signal.timestamp);
+            const timeAgo = getTimeAgo(date);
+            const isNew = signal.isNew ? 'new-signal' : '';
+            const directionColor = signal.direction === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400';
+            const statusColor = signal.status === 'win' ? 'text-green-400' : signal.status === 'loss' ? 'text-red-400' : 'text-yellow-400';
+            const statusText = signal.status === 'win' ? '✅ Gagné' : signal.status === 'loss' ? '❌ Perdu' : '⏳ En cours';
+
+            return `
+                <div class="signal-card ${isNew} bg-black/50 border border-neutral-700 rounded-xl p-4 hover:border-neutral-600 transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-white/10 rounded-lg flex items-center justify-center font-bold">
+                                ${getPairIcon(signal.pair)}
+                            </div>
+                            <div>
+                                <h3 class="font-bold">${signal.pair}</h3>
+                                <p class="text-neutral-500 text-sm">${timeAgo}</p>
+                            </div>
+                        </div>
+                        <span class="px-3 py-1 ${directionColor} text-sm rounded-full font-semibold">${signal.direction}</span>
+                    </div>
+                    <div class="grid grid-cols-3 gap-4 text-sm mb-3">
+                        <div>
+                            <p class="text-neutral-500">Entrée</p>
+                            <p class="font-semibold">${signal.entry}</p>
+                        </div>
+                        <div>
+                            <p class="text-neutral-500">TP</p>
+                            <p class="font-semibold text-green-400">${signal.tp}</p>
+                        </div>
+                        <div>
+                            <p class="text-neutral-500">SL</p>
+                            <p class="font-semibold text-red-400">${signal.sl}</p>
+                        </div>
+                    </div>
+                    ${signal.comment ? `<p class="text-neutral-400 text-sm mb-3">${signal.comment}</p>` : ''}
+                    <div class="flex justify-between items-center pt-3 border-t border-neutral-700">
+                        <span class="${statusColor} text-sm font-semibold">${statusText}</span>
+                        <span class="text-neutral-500 text-xs">${date.toLocaleDateString('fr-FR')} ${date.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getPairIcon(pair) {
+            const icons = {
+                'EUR/USD': '€',
+                'GBP/USD': '£',
+                'USD/JPY': '¥',
+                'BTC/USD': '₿',
+                'ETH/USD': 'Ξ',
+                'XAU/USD': '🥇',
+                'US30': '📈',
+                'NAS100': '📊'
+            };
+            return icons[pair] || '💹';
+        }
+
+        function getTimeAgo(date) {
+            const seconds = Math.floor((new Date() - date) / 1000);
+            if (seconds < 60) return 'À l\'instant';
+            if (seconds < 3600) return `Il y a ${Math.floor(seconds / 60)} min`;
+            if (seconds < 86400) return `Il y a ${Math.floor(seconds / 3600)}h`;
+            return `Il y a ${Math.floor(seconds / 86400)}j`;
+        }
+
+        function refreshAdminSignals() {
+            const signals = getSignals();
+            const container = document.getElementById('admin-signals-list');
+
+            if (signals.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-neutral-400"><p>Aucun signal envoyé</p></div>`;
+                return;
+            }
+
+            container.innerHTML = signals.slice(0, 20).map(signal => `
+                <div class="bg-black/50 border border-neutral-700 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div class="flex items-center gap-4">
+                        <span class="font-bold">${signal.pair}</span>
+                        <span class="px-2 py-1 ${signal.direction === 'BUY' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'} text-xs rounded">${signal.direction}</span>
+                        <span class="text-neutral-400 text-sm">Entrée: ${signal.entry}</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select onchange="updateSignalStatus(${signal.id}, this.value)" class="px-3 py-1 bg-neutral-800 border border-neutral-700 rounded text-sm">
+                            <option value="pending" ${signal.status === 'pending' ? 'selected' : ''}>En cours</option>
+                            <option value="win" ${signal.status === 'win' ? 'selected' : ''}>Gagné</option>
+                            <option value="loss" ${signal.status === 'loss' ? 'selected' : ''}>Perdu</option>
+                        </select>
+                        <button onclick="deleteSignal(${signal.id})" class="p-2 text-red-400 hover:bg-red-500/20 rounded">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateSignalStatus(id, status) {
+            const signals = getSignals();
+            const signal = signals.find(s => s.id === id);
+            if (signal) {
+                signal.status = status;
+                saveSignals(signals);
+                localStorage.setItem('dxb_signal_update', Date.now().toString());
+                showToast('Statut mis à jour');
+            }
+        }
+
+        function deleteSignal(id) {
+            let signals = getSignals();
+            signals = signals.filter(s => s.id !== id);
+            saveSignals(signals);
+            refreshAdminSignals();
+            localStorage.setItem('dxb_signal_update', Date.now().toString());
+            showToast('Signal supprimé');
+        }
+
+        function clearAllSignals() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer tous les signaux ?')) {
+                saveSignals([]);
+                refreshAdminSignals();
+                localStorage.setItem('dxb_signal_update', Date.now().toString());
+                showToast('Tous les signaux ont été supprimés');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CHAT SYSTEM WITH IMAGES
+        // ═══════════════════════════════════════════════════════════════
+        function sendChatMessage(message, imageData = null) {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const messages = getChatMessages();
+            const newMessage = {
+                id: Date.now(),
+                odiamonId: user.email,
+                userName: user.firstname + (user.lastname ? ' ' + user.lastname.charAt(0) + '.' : ''),
+                isAdmin: user.isAdmin,
+                message: message,
+                image: imageData,
+                timestamp: new Date().toISOString()
+            };
+
+            messages.push(newMessage);
+            
+            // Keep only last 100 messages
+            if (messages.length > 100) {
+                messages.shift();
+            }
+
+            saveChatMessages(messages);
+            localStorage.setItem('dxb_chat_update', Date.now().toString());
+
+            refreshChat();
+            scrollChatToBottom();
+        }
+
+        function handleImageUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            // Check file size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Image trop volumineuse (max 2MB)');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                sendChatMessage('', e.target.result);
+                showToast('Image envoyée !');
+            };
+            reader.readAsDataURL(file);
+            input.value = '';
+        }
+
+        function openImagePreview(src) {
+            document.getElementById('preview-image').src = src;
+            document.getElementById('image-preview-modal').classList.add('active');
+        }
+
+        function closeImagePreview() {
+            document.getElementById('image-preview-modal').classList.remove('active');
+        }
+
+        function refreshChat() {
+            const messages = getChatMessages();
+            const container = document.getElementById('chat-messages');
+            const user = getCurrentUser();
+
+            // Update online count (simulated)
+            const users = getUsers();
+            document.getElementById('online-users').textContent = `${users.length + 1} membre(s) connecté(s)`;
+
+            if (messages.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-neutral-400">
+                        <i class="fas fa-comments text-4xl mb-4"></i>
+                        <p>Bienvenue dans le chat !</p>
+                        <p class="text-sm">Commencez à discuter avec la communauté</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = messages.map(msg => {
+                const isOwnMessage = user && msg.odiamonId === user.email;
+                const time = new Date(msg.timestamp).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+                
+                let content = '';
+                if (msg.image) {
+                    content = `<img src="${msg.image}" class="chat-image mt-2" onclick="openImagePreview('${msg.image}')" alt="Image">`;
+                }
+                if (msg.message) {
+                    content += `<p class="${isOwnMessage ? 'text-black' : 'text-neutral-200'}">${escapeHtml(msg.message)}</p>`;
+                }
+                
+                return `
+                    <div class="chat-message ${isOwnMessage ? 'flex justify-end' : ''}">
+                        <div class="${isOwnMessage ? 'bg-white text-black' : 'bg-neutral-800'} rounded-2xl px-4 py-3 max-w-[80%]">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-semibold text-sm ${isOwnMessage ? 'text-black' : ''}">${msg.userName}</span>
+                                ${msg.isAdmin ? '<span class="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs rounded-full">Admin</span>' : ''}
+                                <span class="text-xs ${isOwnMessage ? 'text-neutral-600' : 'text-neutral-500'}">${time}</span>
+                            </div>
+                            ${content}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function scrollChatToBottom() {
+            const container = document.getElementById('chat-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // CALENDAR SYSTEM - PERSONAL PER USER
+        // ═══════════════════════════════════════════════════════════════
+        let currentCalendarDate = new Date();
+        let selectedCalendarType = 'gain';
+
+        function changeMonth(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            // Display user name
+            document.getElementById('calendar-user-name').textContent = user.firstname + (user.lastname ? ' ' + user.lastname : '');
+
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+            document.getElementById('calendar-month-year').textContent = `${monthNames[month]} ${year}`;
+
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const startingDay = (firstDay.getDay() + 6) % 7; // Monday = 0
+            const totalDays = lastDay.getDate();
+
+            // Get calendar data for THIS specific user
+            const calendarData = getCalendarData(user.email);
+            const container = document.getElementById('calendar-grid');
+            
+            let html = '';
+            let totalGains = 0;
+            let totalLosses = 0;
+
+            // Empty cells before first day
+            for (let i = 0; i < startingDay; i++) {
+                html += '<div class="calendar-day"></div>';
+            }
+
+            // Days of the month
+            for (let day = 1; day <= totalDays; day++) {
+                const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const entry = calendarData[dateKey];
+                const isToday = new Date().toDateString() === new Date(year, month, day).toDateString();
+
+                let dayClass = 'bg-neutral-800/50 border-neutral-700 hover:border-neutral-500';
+                let content = day;
+
+                if (entry) {
+                    if (entry.type === 'gain') {
+                        dayClass = 'bg-green-500/20 border-green-500/50 hover:border-green-400';
+                        content = `<div>${day}</div><div class="text-xs text-green-400">+${entry.amount}€</div>`;
+                        totalGains += parseFloat(entry.amount);
+                    } else {
+                        dayClass = 'bg-red-500/20 border-red-500/50 hover:border-red-400';
+                        content = `<div>${day}</div><div class="text-xs text-red-400">-${entry.amount}€</div>`;
+                        totalLosses += parseFloat(entry.amount);
+                    }
+                }
+
+                if (isToday) {
+                    dayClass += ' ring-2 ring-white';
+                }
+
+                html += `
+                    <div onclick="openCalendarModal('${dateKey}')" class="calendar-day ${dayClass} border rounded-lg p-2 text-center cursor-pointer flex flex-col justify-center items-center min-h-[60px]">
+                        ${content}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+
+            // Update stats
+            document.getElementById('month-gains').textContent = `+${totalGains.toFixed(2)}€`;
+            document.getElementById('month-losses').textContent = `-${totalLosses.toFixed(2)}€`;
+            const total = totalGains - totalLosses;
+            const totalElement = document.getElementById('month-total');
+            totalElement.textContent = `${total >= 0 ? '+' : ''}${total.toFixed(2)}€`;
+            totalElement.className = `text-2xl font-bold ${total >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        }
+
+        function openCalendarModal(dateKey) {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const calendarData = getCalendarData(user.email);
+            const entry = calendarData[dateKey];
+
+            document.getElementById('calendar-date').value = dateKey;
+            
+            const dateParts = dateKey.split('-');
+            const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+            document.getElementById('calendar-modal-title').textContent = `Résultat du ${formattedDate}`;
+
+            if (entry) {
+                document.getElementById('calendar-amount').value = entry.amount;
+                document.getElementById('calendar-note').value = entry.note || '';
+                setCalendarType(entry.type);
+                document.getElementById('delete-calendar-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('calendar-amount').value = '';
+                document.getElementById('calendar-note').value = '';
+                setCalendarType('gain');
+                document.getElementById('delete-calendar-btn').classList.add('hidden');
+            }
+
+            openModal('calendar-modal');
+        }
+
+        function setCalendarType(type) {
+            selectedCalendarType = type;
+            const gainBtn = document.getElementById('btn-gain');
+            const lossBtn = document.getElementById('btn-loss');
+
+            gainBtn.className = 'py-3 border rounded-xl font-semibold transition ' + 
+                (type === 'gain' ? 'border-green-500 bg-green-500/20 text-green-400' : 'border-neutral-700 hover:border-green-500 hover:bg-green-500/10');
+            lossBtn.className = 'py-3 border rounded-xl font-semibold transition ' + 
+                (type === 'loss' ? 'border-red-500 bg-red-500/20 text-red-400' : 'border-neutral-700 hover:border-red-500 hover:bg-red-500/10');
+        }
+
+        function saveCalendarEntry() {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const dateKey = document.getElementById('calendar-date').value;
+            const amount = document.getElementById('calendar-amount').value;
+            const note = document.getElementById('calendar-note').value;
+
+            const calendarData = getCalendarData(user.email);
+            calendarData[dateKey] = {
+                type: selectedCalendarType,
+                amount: parseFloat(amount).toFixed(2),
+                note: note
+            };
+
+            saveCalendarData(user.email, calendarData);
+            closeModal('calendar-modal');
+            renderCalendar();
+            showToast('Résultat enregistré !');
+        }
+
+        function deleteCalendarEntry() {
+            const user = getCurrentUser();
+            if (!user) return;
+
+            const dateKey = document.getElementById('calendar-date').value;
+            const calendarData = getCalendarData(user.email);
+            delete calendarData[dateKey];
+
+            saveCalendarData(user.email, calendarData);
+            closeModal('calendar-modal');
+            renderCalendar();
+            showToast('Entrée supprimée');
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // NEWSLETTER MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════
+        function addNewsletterEmail(email) {
+            const emails = getNewsletterEmails();
+            if (!emails.includes(email)) {
+                emails.push(email);
+                saveNewsletterEmails(emails);
+            }
+        }
+
+        function refreshNewsletterList() {
+            const emails = getNewsletterEmails();
+            const container = document.getElementById('newsletter-list');
+            const countElement = document.getElementById('newsletter-count');
+
+            countElement.textContent = `${emails.length} email${emails.length > 1 ? 's' : ''}`;
+
+            if (emails.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-neutral-400">
+                        <i class="fas fa-envelope text-4xl mb-4"></i>
+                        <p>Aucun email inscrit</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = emails.map((email, index) => `
+                <div class="bg-black/50 border border-neutral-700 rounded-lg p-3 flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <span class="text-neutral-500 text-sm">${index + 1}.</span>
+                        <span>${email}</span>
+                    </div>
+                    <button onclick="removeNewsletterEmail('${email}')" class="p-2 text-red-400 hover:bg-red-500/20 rounded" title="Supprimer">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function removeNewsletterEmail(email) {
+            let emails = getNewsletterEmails();
+            emails = emails.filter(e => e !== email);
+            saveNewsletterEmails(emails);
+            refreshNewsletterList();
+            showToast('Email supprimé');
+        }
+
+        function exportNewsletterEmails() {
+            const emails = getNewsletterEmails();
+            if (emails.length === 0) {
+                showToast('Aucun email à exporter');
+                return;
+            }
+
+            const text = emails.join('\n');
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'newsletter_emails.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Emails exportés !');
+        }
+
+        function clearNewsletterEmails() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer tous les emails ?')) {
+                saveNewsletterEmails([]);
+                refreshNewsletterList();
+                showToast('Tous les emails ont été supprimés');
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // UI FUNCTIONS
+        // ═══════════════════════════════════════════════════════════════
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function switchModal(fromModal, toModal) {
+            closeModal(fromModal);
+            setTimeout(() => openModal(toModal), 200);
+        }
+
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal.active').forEach(modal => {
+                    closeModal(modal.id);
+                });
+                closeImagePreview();
+            }
+        });
+
+        function selectPlan(planName) {
+            document.getElementById('pricing-plan-name').textContent = planName;
+            openModal('pricing-modal');
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function toggleFaq(btn) {
+            const content = btn.nextElementSibling;
+            const icon = btn.querySelector('i');
+            content.classList.toggle('hidden');
+            icon.style.transform = content.classList.contains('hidden') ? '' : 'rotate(180deg)';
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // FORM HANDLERS
+        // ═══════════════════════════════════════════════════════════════
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            if (login(email, password)) {
+                closeModal('login-modal');
+                showToast('Connexion réussie!');
+                navigateTo('signals');
+            } else {
+                showToast('Email ou mot de passe incorrect');
+            }
+        });
+
+        document.getElementById('contact-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            closeModal('contact-modal');
+            showToast('Message envoyé avec succès!');
+            e.target.reset();
+        });
+
+        document.getElementById('newsletter-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('newsletter-email').value;
+            addNewsletterEmail(email);
+            showToast('Inscription à la newsletter réussie!');
+            e.target.reset();
+        });
+
+        document.getElementById('signal-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const pair = document.getElementById('signal-pair').value;
+            const direction = document.getElementById('signal-direction').value;
+            const entry = document.getElementById('signal-entry').value;
+            const tp = document.getElementById('signal-tp').value;
+            const sl = document.getElementById('signal-sl').value;
+            const comment = document.getElementById('signal-comment').value;
+
+            sendSignal(pair, direction, entry, tp, sl, comment);
+            showToast('🚀 Signal envoyé à tous les utilisateurs!');
+            e.target.reset();
+            refreshAdminSignals();
+        });
+
+        document.getElementById('create-user-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const firstname = document.getElementById('new-user-firstname').value;
+            const lastname = document.getElementById('new-user-lastname').value;
+            const email = document.getElementById('new-user-email').value;
+            const password = document.getElementById('new-user-password').value;
+
+            const result = createStudent(firstname, lastname, email, password);
+            if (result.success) {
+                showToast('✅ Compte élève créé avec succès!');
+                e.target.reset();
+                refreshStudentsList();
+            } else {
+                showToast(result.message);
+            }
+        });
+
+        document.getElementById('chat-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            
+            if (message) {
+                sendChatMessage(message);
+                input.value = '';
+            }
+        });
+
+        document.getElementById('calendar-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            saveCalendarEntry();
+        });
+
+        // ═══════════════════════════════════════════════════════════════
+        // STUDENT MANAGEMENT
+        // ═══════════════════════════════════════════════════════════════
+        function createStudent(firstname, lastname, email, password) {
+            const users = getUsers();
+            
+            if (users.find(u => u.email === email)) {
+                return { success: false, message: 'Cet email est déjà utilisé' };
+            }
+
+            users.push({ 
+                firstname, 
+                lastname, 
+                email, 
+                password,
+                createdAt: new Date().toISOString()
+            });
+            saveUsers(users);
+            return { success: true };
+        }
+
+        function deleteStudent(email) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cet élève ?')) {
+                let users = getUsers();
+                users = users.filter(u => u.email !== email);
+                saveUsers(users);
+                refreshStudentsList();
+                showToast('Élève supprimé');
+            }
+        }
+
+        function refreshStudentsList() {
+            const users = getUsers();
+            const container = document.getElementById('students-list');
+            const countElement = document.getElementById('students-count');
+
+            countElement.textContent = `${users.length} élève${users.length > 1 ? 's' : ''}`;
+
+            if (users.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-neutral-400">
+                        <p>Aucun élève inscrit</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = users.map(user => `
+                <div class="bg-black/50 border border-neutral-700 rounded-xl p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center font-bold">
+                            ${user.firstname.charAt(0).toUpperCase()}${user.lastname.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                            <p class="font-semibold">${user.firstname} ${user.lastname}</p>
+                            <p class="text-neutral-500 text-sm">${user.email}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-neutral-500 text-xs hidden sm:block">MDP: ${user.password}</span>
+                        <button onclick="deleteStudent('${user.email}')" class="p-2 text-red-400 hover:bg-red-500/20 rounded" title="Supprimer">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // REAL-TIME UPDATES
+        // ═══════════════════════════════════════════════════════════════
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'dxb_signal_update') {
+                const currentPage = document.querySelector('.page.active').id;
+                if (currentPage === 'signals-page') {
+                    refreshSignals();
+                    showToast('🔔 Nouveau signal reçu !');
+                }
+            }
+            if (e.key === 'dxb_chat_update') {
+                refreshChat();
+                scrollChatToBottom();
+            }
+        });
+
+        // Auto-refresh chat every 5 seconds
+        setInterval(() => {
+            const chatTab = document.getElementById('tab-chat');
+            if (chatTab && !chatTab.classList.contains('hidden')) {
+                refreshChat();
+            }
+        }, 5000);
+
+        // ═══════════════════════════════════════════════════════════════
+        // STATS ANIMATION
+        // ═══════════════════════════════════════════════════════════════
+        function animateValue(element, start, end, duration, suffix = '') {
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value.toLocaleString() + suffix;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        const statsSection = document.getElementById('stats');
+        let statsAnimated = false;
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !statsAnimated) {
+                    statsAnimated = true;
+                    animateValue(document.getElementById('stat1'), 0, 87, 2000, '%');
+                    animateValue(document.getElementById('stat2'), 0, 106, 2000);
+                    animateValue(document.getElementById('stat3'), 0, 27, 2000);
+                    animateValue(document.getElementById('stat4'), 0, 16, 2000, );
+                }
+            });
+        }, { threshold: 0.5 });
+
+        observer.observe(statsSection);
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href !== '#') {
+                    e.preventDefault();
+                    const target = document.querySelector(href);
+                    if (target) {
+                        target.scrollIntoView({ behavior: 'smooth' });
+                        mobileMenu.classList.add('hidden');
+                    }
+                }
+            });
+        });
+
+        // Navbar scroll effect
+        window.addEventListener('scroll', () => {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('bg-black/95');
+            } else {
+                nav.classList.remove('bg-black/95');
+            }
+        });
+
+        // Initialize
+        updateUI();
+    </script>
+</body>
+</html>
